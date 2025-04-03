@@ -1,47 +1,74 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-export default function Form({setImageUrl}) {
-  const [loaded, setLoaded] = useState(false);
+import { Mic, MicOff } from "lucide-react";
 
+export default function Form({ setImageUrl, setLoading }) {
   const [data, setData] = useState({
     author: "",
     prompt: "",
   });
+  const [listening, setListening] = useState(false);
+  let recognition;
+
+  if ("webkitSpeechRecognition" in window) {
+    recognition = new window.webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+  }
+
   const handleChange = (e) => {
     setData((prevData) => ({ ...prevData, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(data);
+    setLoading(true);
     generateImage();
-    setLoaded(true);
   };
+
   const generateImage = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/generate-image",
+        "https://image-pig-generator.onrender.com/api/generate-image",
         data
       );
-      console.log(res.data);
       setImageUrl(res.data.image.imageUrl);
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       console.log(error);
     }
   };
+
+  const startListening = () => {
+    if (recognition) {
+      recognition.start();
+      setListening(true);
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setData((prevData) => ({ ...prevData, prompt: transcript }));
+      };
+
+      recognition.onend = () => {
+        setListening(false);
+      };
+    }
+  };
+
   return (
-    <div className="">
-      <div className=" bg-white p-10 shadow-xl shadow-gray-600 md:w-[500px] w-full">
+    <div>
+      <div className="bg-white p-10 shadow-xl shadow-gray-600 md:w-[500px] w-full">
         <h1 className="font-semibold text-2xl py-1">
-          Generate Image with prompt
+          Generate Image with Prompt
         </h1>
         <h3 className="text-lg py-1">
-          {" "}
           Write your prompt according to the image you want to generate!
         </h3>
         <form className="flex flex-col" onSubmit={handleSubmit}>
           <label htmlFor="author" className="font-semibold py-2">
-            Author :{" "}
+            Author:
           </label>
           <input
             type="text"
@@ -50,6 +77,7 @@ export default function Form({setImageUrl}) {
             className="py-3 px-5 border-2 outline-none"
             onChange={handleChange}
           />
+
           <label htmlFor="prompt" className="font-semibold py-2">
             Prompt
           </label>
@@ -57,29 +85,37 @@ export default function Form({setImageUrl}) {
             type="text"
             placeholder="Enter your prompt here..."
             name="prompt"
+            value={data.prompt}
             className="py-3 px-5 border-2 outline-none"
             onChange={handleChange}
           />
+          <div className="flex space-x-3 mt-2">
+            <button
+              type="button"
+              onClick={startListening}
+              className="py-2 px-4 bg-green-500 text-white rounded-md flex items-center space-x-2"
+              disabled={listening}
+            >
+              {listening ? <MicOff size={20} /> : <Mic size={20} />}
+              <span>{listening ? "Listening..." : "Start Voice"}</span>
+            </button>
+          </div>
           <p className="font-medium text-sm my-2">
             * You can post the AI Generated Image to showcase in the community!
           </p>
-          <div className="flex items-center justify-between p-2 mt-3 mx-auto">
-            <button
-              type="submit"
-              className={
-                data.prompt !== ""
-                  ? "py-3   px-7 cursor-pointer bg-blue-600 border-2 border-gray-200  rounded-xl "
-                  : "py-3 px-7 border-2 border-gray-200  rounded-xl  disabled:bg-blue-200 disabled:cursor-not-allowed"
-              }
-              disabled={data.prompt === ""}
-            >
-              Generate Image
-            </button>
-           
-          </div>
+          <button
+            type="submit"
+            className={`py-3 px-7 border-2 rounded-xl ${
+              data.prompt !== ""
+                ? "bg-blue-600 cursor-pointer"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+            disabled={data.prompt === ""}
+          >
+            Generate Image
+          </button>
         </form>
       </div>
-         
     </div>
   );
 }

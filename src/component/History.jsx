@@ -3,32 +3,9 @@ import { FaSearch } from "react-icons/fa";
 import { LuLoaderPinwheel } from "react-icons/lu";
 import { MdFileDownload } from "react-icons/md";
 import axios from "axios";
-// const history = [
-//   {
-//     image:
-//       "https://img.freepik.com/premium-photo/portrait-successful-programmer-game-developer-coder-guy-uses-computer-laptop-work-game-design-hacker-boy-generative-ai-cyber-gamer_117038-7605.jpg?w=2000",
-//     author: "Arvind",
-//     prompt: "Python for Beginners",
-//   },
-//   {
-//     image:
-//       "https://img.freepik.com/premium-photo/portrait-successful-programmer-game-developer-coder-guy-uses-computer-laptop-work-game-design-hacker-boy-generative-ai-cyber-gamer_117038-7605.jpg?w=2000",
-//     author: "Anjali",
-//     prompt: "Js for beginner",
-//   },
-//   {
-//     image:
-//       "https://img.freepik.com/premium-photo/portrait-successful-programmer-game-developer-coder-guy-uses-computer-laptop-work-game-design-hacker-boy-generative-ai-cyber-gamer_117038-7605.jpg?w=2000",
-//     author: "Rohit",
-//     prompt: "java for beginner",
-//   },
-//   {
-//     image:
-//       "https://img.freepik.com/premium-photo/portrait-successful-programmer-game-developer-coder-guy-uses-computer-laptop-work-game-design-hacker-boy-generative-ai-cyber-gamer_117038-7605.jpg?w=2000",
-//     author: "Raj",
-//     prompt: "Hello Raj",
-//   },
-// ];
+import { MdDelete } from "react-icons/md"
+import Loader from "./Loder";
+
 
 export default function History() {
   const [search, setSearch] = useState("");
@@ -70,19 +47,33 @@ const [history, setHistory] = useState([]);
   };
   useEffect (() => {
     const fetchHistory = async () => {
+      setLoading(true);
       try {
-        const response = await axios.get('http://localhost:5000/api/all-image');
+        const response = await axios.get("https://image-pig-generator.onrender.com/api/all-image");
         console.log(response.data.response)
         setHistory(response.data.response);
+      setLoading(false);
+
         } catch (error) {
+      setLoading(false);
+          
           console.error("Error fetching history:", error);
           }
           }
           fetchHistory();
-          }, []);
-console.log(history)
+      setLoading(false);
 
-  
+          }, []);
+
+const handledelete = async (id) => {
+  try {
+    await axios.delete(`https://image-pig-generator.onrender.com/api/delete/${id}`);
+    setHistory(history.filter((item) => item._id !== id));
+  } catch (error) {
+    console.error("Error deleting:", error.message);
+  }
+};
+
   return (
     <>
       <div className="flex flex-col items-center justify-center my-10">
@@ -110,38 +101,47 @@ console.log(history)
       </div>
 
     <div className=" flex items-center justify-center mx-auto my-10">
-    <div className="flex flex-wrap items-center justify-start gap-5">
-        {filteredImages.length>0&&filteredImages?.map((item, index) => {
-          return (
-            <div
-              key={index}
-              className="bg-white shadow-xl shadow-gray-300 border-2 border-gray-950 rounded-lg"
+{loading?(
+  <Loader/>
+):(
+  <div className="flex flex-wrap items-center justify-start gap-5">
+  {filteredImages.length>0&&filteredImages?.map((item, index) => {
+    return (
+      <div
+        key={index}
+        className="bg-white shadow-xl shadow-gray-300 border-2 border-gray-950 rounded-lg"
+      >
+        <div className="w-70 h-72 bg-white shadow-xl shadow-gray-600">
+          <img src={item.imageUrl} alt="" className=" w-full h-72 " />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-semibold p-1">
+            Author :{item.author}
+          </span>
+          <div>
+          {loading ? (
+            <LuLoaderPinwheel className="w-10 h-10 cursor-pointer  m-2 flex items-center justify-center  rounded-full bg-white shadow-2xl shadow-amber-200 animate-spin " />
+          ) : (
+            <span
+              className="w-10 h-10 cursor-pointer  m-2 flex items-center justify-center bg-blue-400 rounded-full bg-white shadow-2xl shadow-amber-200"
+              onClick={() => downloadImage(item.imageUrl)}
             >
-              <div className="w-70 h-72 bg-white shadow-xl shadow-gray-600">
-                <img src={item.imageUrl} alt="" className=" w-full h-72" />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold p-1">
-                  Author :{item.author}
-                </span>
-                {loading ? (
-                  <LuLoaderPinwheel className="w-10 h-10 cursor-pointer  m-2 flex items-center justify-center  rounded-full bg-white shadow-2xl shadow-amber-200 animate-spin " />
-                ) : (
-                  <span
-                    className="w-10 h-10 cursor-pointer  m-2 flex items-center justify-center bg-blue-400 rounded-full bg-white shadow-2xl shadow-amber-200"
-                    onClick={() => downloadImage(item.imageUrl)}
-                  >
-                    <MdFileDownload className="text-xl  font-bold text-gray-950" />{" "}
-                  </span>
-                )}
-              </div>
-              <div className="">
-                <span>Prompt : {item.prompt} </span>
-              </div>
-            </div>
-          );
-        })}
+              <MdFileDownload className="text-xl  font-bold text-gray-950" />{" "}
+            </span>
+          )}
+          <button onClick={()=>handledelete(item._id)}>
+            <MdDelete/>
+          </button>
+          </div>
+        </div>
+        <div className="">
+          <span>Prompt : {item.prompt} </span>
+        </div>
       </div>
+    );
+  })}
+</div>
+)}
     </div>
 
     </>
